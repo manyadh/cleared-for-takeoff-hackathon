@@ -13,7 +13,11 @@
   through `geniex serve --compute npu`. Accuracy was not usable with the current prompt: the model copied values
   from the JSON example in the prompt (every record got `insulin`; with the example emptied, records came back empty).
   One extract call logged 3150 ms; that is a single observation, not a median.
-- **Not verified:** NPU execution (the server log was not checked for an `HTP0` line), LLM triage
+- **NPU evidence:** the server log for that session (`~/geniex-serve.log`, 04:20:20 UTC, about two minutes before
+  the first logged extract) shows `resolve_devices] Found device: HTP0` followed by `Using 1 device(s): HTP`
+  (the second line was read from a console that cut it off at the terminal width). CPU work remains in any such
+  run; this is not a claim of entirely-NPU execution.
+- **Not verified:** LLM triage
   (`MUSTER_TRIAGE=llm` returned `empty answer (finish=length)` at its 80-token cap), d1-2B triage, voice input through
   ZETIC, the browser dashboard on the board (it was tested on a laptop only), and a run with the board's Wi-Fi turned
   off after the model install.
