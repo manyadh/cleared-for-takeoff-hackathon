@@ -2,6 +2,22 @@
 
 **When the cell towers go down, the shelter still knows who's here, who's hurt, and who's missing.**
 
+## Status at submission (Nov 13 2026): what was and was not verified
+
+- **Demoed build: rule-based.** The demo ran on the Dragonwing IQ-9075 EVK from the UART console in the default
+  mode (`MUSTER_MODE=mock`, `MUSTER_TRIAGE=rules`): extraction and triage are keyword rules. The app, data, UI and
+  log all ran on the board. The three demo reports gave the expected results in this mode.
+- **LFM3 ran on the board, but is not the demoed path.** GenieX v0.10.0 (QAIRT runtime 2.50) and
+  `LiquidAI/LFM3-1.7B-GGUF:Q4_0` were installed on the board, and `MUSTER_MODE=device` extraction returned records
+  through `geniex serve --compute npu`. Accuracy was not usable with the current prompt: the model copied values
+  from the JSON example in the prompt (every record got `insulin`; with the example emptied, records came back empty).
+  One extract call logged 3150 ms; that is a single observation, not a median.
+- **Not verified:** NPU execution (the server log was not checked for an `HTP0` line), LLM triage
+  (`MUSTER_TRIAGE=llm` returned `empty answer (finish=length)` at its 80-token cap), d1-2B triage, voice input through
+  ZETIC, the browser dashboard on the board (it was tested on a laptop only), and a run with the board's Wi-Fi turned
+  off after the model install.
+- The design below describes the intended pipeline. Read it with the list above in mind.
+
 People report to a kiosk by voice or typing. LFM3 models on the Dragonwing IQ-9075 turn each report into
 a structured record. d1-2B flags who needs a medic first, the board matches people looking for family
 against people who were brought in, and every record is packed into a ~40-byte line small enough for a radio link.
