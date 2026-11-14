@@ -1,0 +1,19 @@
+# Runtime state: shelter records and the decision log stay on the board
+muster.db
+muster.db-journal
+muster.db-wal
+muster.db-shm
+muster_log.jsonl
+__pycache__/
+pycache/
+*.pyc
+
+# Model weights are never committed (they come from the supplied USB drives)
+models/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+*.dlc

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muster · shelter intake</title>
+<style>
+  :root { --bg:#0e1116; --panel:#161b22; --line:#2a313c; --text:#e6edf3; --dim:#8b949e;
+          --red:#f85149; --orange:#f0883e; --yellow:#d29922; --green:#3fb950; --blue:#58a6ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 system-ui, sans-serif; }
+  header { display:flex; align-items:center; gap:16px; padding:14px 22px; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:20px; letter-spacing:.5px; }
+  .pill { padding:3px 10px; border-radius:99px; font-size:12px; font-weight:600; border:1px solid var(--line); }
+  .offline { background:#3fb95022; color:var(--green); border-color:#3fb95066; }
+  .stat { margin-left:auto; display:flex; gap:22px; color:var(--dim); }
+  .stat b { color:var(--text); font-size:18px; display:block; }
+  main { display:grid; grid-template-columns: 360px 1fr 300px; gap:16px; padding:16px; height:calc(100vh - 64px); }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; overflow:auto; }
+  h2 { margin:0 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); }
+  #mic { width:100%; height:120px; border-radius:12px; border:2px solid var(--line); background:#0d1117;
+         color:var(--text); font-size:20px; font-weight:600; cursor:pointer; }
+  #mic.rec { border-color:var(--red); color:var(--red); animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { box-shadow:0 0 0 8px #f8514922; } }
+  textarea { width:100%; height:110px; margin-top:12px; background:#0d1117; color:var(--text);
+             border:1px solid var(--line); border-radius:8px; padding:10px; font:inherit; resize:vertical; }
+  button.small { margin-top:8px; padding:8px 14px; border-radius:8px; border:1px solid var(--line);
+                 background:#21262d; color:var(--text); cursor:pointer; font-weight:600; }
+  #reply { margin-top:14px; padding:14px; border-radius:8px; background:#0d1117; border-left:4px solid var(--blue);
+           font-size:17px; min-height:60px; }
+  #status { color:var(--dim); font-size:13px; margin-top:8px; min-height:18px; }
+  .card { border:1px solid var(--line); border-left:6px solid var(--dim); border-radius:8px; padding:10px 12px;
+          margin-bottom:10px; background:#0d1117; }
+  .card.RED { border-left-color:var(--red); } .card.ORANGE { border-left-color:var(--orange); }
+  .card.YELLOW { border-left-color:var(--yellow); } .card.GREEN { border-left-color:var(--green); }
+  .card .top { display:flex; gap:8px; align-items:baseline; }
+  .card .id { font-weight:700; } .card .ts { color:var(--dim); font-size:12px; margin-left:auto; }
+  .tag { font-size:11px; padding:1px 7px; border-radius:99px; background:#21262d; color:var(--dim); margin-right:4px; }
+  .tag.med { background:#f0883e22; color:var(--orange); } .tag.miss { background:#58a6ff22; color:var(--blue); }
+  .tr { color:var(--dim); font-size:13px; margin-top:4px; font-style:italic; }
+  .match { background:linear-gradient(90deg,#3fb95033,#3fb95011); border:1px solid #3fb95077;
+           border-radius:10px; padding:12px; margin-bottom:12px; font-size:16px; }
+  .need { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .need .bar { height:10px; background:var(--blue); border-radius:4px; }
+  .need span:first-child { width:80px; }
+  .log { font:12px/1.6 ui-monospace, monospace; color:var(--green); word-break:break-all; }
+  .log div { border-bottom:1px dashed var(--line); padding:3px 0; }
+  .dlog { font:11.5px/1.5 ui-monospace, monospace; color:var(--dim); }
+  .dlog div { padding:2px 0; border-bottom:1px dashed var(--line); word-break:break-all; }
+  .dlog .st { color:var(--blue); } .dlog .ms { color:var(--text); } .dlog .err { color:var(--red); }
+  .dlog .act { color:var(--green); }
+</style>
+</head>
+<body>
+<header>
+  <h1>MUSTER</h1>
+  <span class="pill offline">OFFLINE - on-device</span>
+  <span class="pill" id="site">site</span>
+  <div class="stat">
+    <div><b id="people">0</b>people here</div>
+    <div><b id="redcount">0</b>urgent</div>
+    <div><b id="bytes">0</b>bytes sent by radio</div>
+  </div>
+</header>
+
+<main>
+  <!-- KIOSK -->
+  <section>
+    <h2>Intake · speak any language</h2>
+    <button id="mic">Hold to speak</button>
+    <textarea id="text" placeholder="…or type the report (e.g. Me llamo Ana. Tengo diabetes y necesito insulina. No encuentro a mi hijo Luis, tiene 8 años.)"></textarea>
+    <button class="small" id="send">Register</button>
+    <button class="small" id="reset" style="float:right;opacity:.6">reset</button>
+    <div id="status"></div>
+    <h2 style="margin-top:18px">Reply to person</h2>
+    <div id="reply">—</div>
+  </section>
+
+  <!-- QUEUE -->
+  <section>
+    <div id="matches"></div>
+    <h2>Priority queue</h2>
+    <div id="queue"></div>
+  </section>
+
+  <!-- NEEDS + UPLINK -->
+  <section>
+    <h2>Supplies needed</h2>
+    <div id="needs"></div>
+    <h2 style="margin-top:20px">Radio uplink to regional command</h2>
+    <div class="log" id="log"></div>
+    <h2 style="margin-top:20px">Decision log (local JSONL)</h2>
+    <div class="dlog" id="dlog"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+async function submit(url, body, headers) {
+  $("status").textContent = "Listening, understanding, triaging...";
+  try {
+    const r = await fetch(url, { method: "POST", body, headers });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.status);
+    $("reply").textContent = d.record.reply;
+    $("status").textContent = `Registered #${d.record.id} · ${d.record.triage.priority}`;
+    speak(d.record.reply, d.record.intake.language);
+    $("text").value = "";
+    refresh();
+  } catch (e) { $("status").textContent = "Error: " + e.message.slice(0, 200); }
+}
+
+// Browser TTS is a placeholder; on the board, swap for LFM3-Audio speech output.
+function speak(text, lang) {
+  try { const u = new SpeechSynthesisUtterance(text); u.lang = lang; speechSynthesis.speak(u); } catch {}
+}
+
+$("send").onclick = () => submit("/intake", JSON.stringify({ text: $("text").value }), { "Content-Type": "application/json" });
+$("reset").onclick = async () => { await fetch("/reset", { method: "POST" }); $("reply").textContent = "—"; refresh(); };
+
+// push-to-talk
+let rec, chunks = [];
+$("mic").onpointerdown = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    rec = new MediaRecorder(stream); chunks = [];
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = () => { stream.getTracks().forEach(t => t.stop());
+      submit("/intake_audio", new Blob(chunks, { type: "audio/webm" }), { "Content-Type": "audio/webm" }); };
+    rec.start(); $("mic").classList.add("rec"); $("mic").textContent = "Recording... release to send";
+  } catch (e) { $("status").textContent = "Mic unavailable: " + e.message; }
+};
+$("mic").onpointerup = $("mic").onpointerleave = () => {
+  if (rec && rec.state === "recording") { rec.stop(); $("mic").classList.remove("rec"); $("mic").textContent = "Hold to speak"; }
+};
+
+async function refresh() {
+  const b = await (await fetch("/board")).json();
+  $("site").textContent = `site ${b.site} · ${b.mode}`;
+  $("people").textContent = b.people;
+  $("redcount").textContent = b.records.filter(r => ["RED","ORANGE"].includes(r.triage.priority)).length;
+  $("bytes").textContent = b.uplink_bytes;
+
+  $("matches").innerHTML = b.matches.map(m =>
+    `<div class="match"><b>Possible reunion (staff to verify):</b> ${esc(m.name)}${m.age ? ", " + m.age : ""} is here (record #${m.found_in})
+     and record #${m.missing_in} is looking for them. Name match ${Math.round(m.score * 100)}%.</div>`).join("");
+
+  $("queue").innerHTML = b.records.map(r => {
+    const i = r.intake;
+    const tags = [
+      ...i.medical_needs.map(x => `<span class="tag med">${esc(x)}</span>`),
+      ...i.injuries.map(x => `<span class="tag med">${esc(x)}</span>`),
+      ...i.missing.map(p => `<span class="tag miss">looking for ${esc(p.name)}${p.age ? " (" + p.age + ")" : ""}</span>`),
+      ...i.found.map(p => `<span class="tag miss">brought ${esc(p.name)}${p.age ? " (" + p.age + ")" : ""}</span>`),
+      `<span class="tag">${esc(i.language)}</span>`, `<span class="tag">group ${i.group_size}</span>`,
+    ].join("");
+    return `<div class="card ${r.triage.priority}">
+      <div class="top"><span class="id">#${r.id}</span> <span>${esc(i.speaker_name || "Unnamed")}</span>
+      <span class="tag">${r.triage.priority}</span><span class="ts">${r.ts}</span></div>
+      <div style="margin-top:6px">${tags}</div>
+      <div class="tr">“${esc(r.transcript)}”</div></div>`;
+  }).join("") || `<div style="color:var(--dim)">No one registered yet.</div>`;
+
+  const max = Math.max(1, ...Object.values(b.needs));
+  $("needs").innerHTML = Object.entries(b.needs).map(([k, v]) =>
+    `<div class="need"><span>${esc(k)}</span><div class="bar" style="width:${120 * v / max}px"></div><b>${v}</b></div>`
+  ).join("") || `<div style="color:var(--dim)">—</div>`;
+
+  $("log").innerHTML = [...b.records].sort((a, z) => z.id - a.id)
+    .map(r => `<div>${esc(r.uplink)} <span style="color:var(--dim)">(${r.uplink.length}B)</span></div>`).join("");
+}
+async function refreshLog() {
+  const L = await (await fetch("/log")).json();
+  $("dlog").innerHTML = L.slice(-14).reverse().map(e => {
+    let what = e.error ? `<span class="err">${esc(e.error)}</span>`
+      : e.stage === "action" ? `<span class="act">${esc(e.action)}</span> ${esc(e.line || e.name || e.priority || "")}`
+      : e.stage === "triage" ? `${esc(e.priority)} ${esc(JSON.stringify(e.p))}`
+      : e.stage === "asr" ? esc(e.backend)
+      : esc(e.backend || "");
+    return `<div>${esc(e.t)} <span class="st">${esc(e.stage)}</span> ${e.ms != null ? `<span class="ms">${e.ms}ms</span>` : ""} ${what}</div>`;
+  }).join("") || "—";
+}
+refresh(); refreshLog(); setInterval(() => { refresh(); refreshLog(); }, 2000);
+</script>
+</body>
+</html>
