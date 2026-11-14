@@ -6,7 +6,8 @@
 
 - **Demoed build: rule-based.** The demo ran on the Dragonwing IQ-9075 EVK from the UART console in the default
   mode (`MUSTER_MODE=mock`, `MUSTER_TRIAGE=rules`): extraction and triage are keyword rules. The app, data, UI and
-  log all ran on the board. The three demo reports gave the expected results in this mode.
+  log all ran on the board. The team confirmed the first demo report (Ana) on the board in this mode;
+  all demo reports gave the expected results in this mode on a laptop.
 - **LFM3 ran on the board, but is not the demoed path.** GenieX v0.10.0 (QAIRT runtime 2.50) and
   `LiquidAI/LFM3-1.7B-GGUF:Q4_0` were installed on the board, and `MUSTER_MODE=device` extraction returned records
   through `geniex serve --compute npu`. Accuracy was not usable with the current prompt: the model copied values
